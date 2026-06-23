@@ -25,7 +25,7 @@ warnings.filterwarnings('ignore')
 # ─────────────────────────────────────────────────────────────────────
 # SECTION 2: CONFIG — update these paths to your local setup
 # ─────────────────────────────────────────────────────────────────────
-CSV_PATH        = './predex_test_final.csv'
+CSV_PATH        = './predex_test_deduped.csv'
 CHECKPOINT_PATH = './best_hierarchical_model.pt'
 SPLITS_JSON     = './predex_opennyai_splits.json'
 RESULTS_JSON    = './predex_ablation_results.json'
