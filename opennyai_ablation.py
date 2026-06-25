@@ -31,7 +31,7 @@ SPLITS_JSON     = './predex_opennyai_splits.json'
 RESULTS_JSON    = './predex_ablation_results.json'
 PLOTS_DIR       = './'
 
-MODEL_NAME      = "law-ai/InLegalBERT"
+MODEL_NAME      ="./InLegalBERT"          # local folder downloaded from your HF repo
 GRU_HIDDEN      = 256
 GRU_LAYERS      = 2
 DROPOUT         = 0.3
