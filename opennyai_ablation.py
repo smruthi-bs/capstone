@@ -31,7 +31,7 @@ SPLITS_JSON     = './predex_opennyai_splits.json'
 RESULTS_JSON    = './predex_ablation_results.json'
 PLOTS_DIR       = './'
 
-MODEL_NAME      = "law-ai/InLegalBERT"
+MODEL_NAME      ="./InLegalBERT"          # local folder downloaded from your HF repo
 GRU_HIDDEN      = 256
 GRU_LAYERS      = 2
 DROPOUT         = 0.3
@@ -78,7 +78,7 @@ def counterfactual_section(sentence):
 # ─────────────────────────────────────────────────────────────────────
 # SECTION 4: OPENNYAI SEGMENTATION
 # ─────────────────────────────────────────────────────────────────────
-KNOWN_ROLES = ['FAC', 'ARG', 'STA', 'PRE', 'RLC', 'RPC', 'RCJ', 'RAT', 'NONE']
+KNOWN_ROLES = ['FAC', 'ARG_PETITIONER', 'ARG_RESPONDENT', 'ANALYSIS', 'PRE_RELIED', 'PRE_NOT_RELIED', 'PREAMBLE', 'RATIO', 'RLC', 'RPC', 'NONE']
 
 def run_opennyai_segmentation(texts, batch_size=8):
     """
@@ -100,7 +100,7 @@ def run_opennyai_segmentation(texts, batch_size=8):
 
     for batch_start in tqdm(range(0, len(texts), batch_size), desc="OpenNyAI segmentation"):
         batch_texts = texts[batch_start : batch_start + batch_size]
-        data = Data(batch_texts)
+        data = Data(batch_texts, preprocessing_nlp_model='en_core_web_sm')
 
         try:
             results = pipeline(data)
@@ -113,8 +113,9 @@ def run_opennyai_segmentation(texts, batch_size=8):
         for result in results:
             role_buckets = {role: [] for role in KNOWN_ROLES}
             for annotation in result.get('annotations', []):
-                sentence = annotation.get('sentence', '').strip()
-                role     = annotation.get('Rhetorical_Role', 'NONE')
+                sentence = annotation.get('text', '').strip()
+                role_list = annotation.get('labels', ['NONE'])
+                role = role_list[0] if role_list else 'NONE'
                 if not sentence:
                     continue
                 if role not in role_buckets:
@@ -144,13 +145,13 @@ def run_opennyai_segmentation(texts, batch_size=8):
 # ─────────────────────────────────────────────────────────────────────
 def build_variants(role_buckets):
     facts    = role_buckets.get('FAC', [])
-    sta      = role_buckets.get('STA', [])
-    pre      = role_buckets.get('PRE', [])
+    sta      = role_buckets.get('ANALYSIS', [])
+    pre      = role_buckets.get('PRE_RELIED', [])
     rlc      = role_buckets.get('RLC', [])
     rpc      = role_buckets.get('RPC', [])
     rcj      = role_buckets.get('RCJ', [])
-    arg      = role_buckets.get('ARG', [])
-    rat      = role_buckets.get('RAT', [])
+    arg      = role_buckets.get('ARG_PETITIONER', []) + role_buckets.get('ARG_RESPONDENT', [])
+    rat      = role_buckets.get('RATIO', [])
     all_sents = [s for sents in role_buckets.values() for s in sents]
 
     # Pool all high-risk roles as the "spurious" set for graduated ablation
