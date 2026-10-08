@@ -1,4 +1,23 @@
 env/
 *.pt
-__pycache__/
 predex_opennyai_splits.json
+
+# Virtual environment
+.venv/
+
+# Large HF artifacts
+hf_files/
+
+# Large generated segmentation artifact
+predex_opennyai_raw_v2.json
+
+# Runtime logs
+run.log
+
+# Smoke-test files
+mini.csv
+test_run.py
+
+# Python cache
+__pycache__/
+*.pyc
