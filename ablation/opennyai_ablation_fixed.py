@@ -60,15 +60,15 @@ def lenient_state_dict_loading():
 # ─────────────────────────────────────────────────────────────────────
 # SECTION 2: CONFIG
 # ─────────────────────────────────────────────────────────────────────
-CSV_PATH        = "./hf_files/predex_test_deduped.csv"
+CSV_PATH        = './predex_test_deduped_final.csv'   # final deduped set (1,346 cases) - confirm!
 EXPECTED_N      = 1346
-CHECKPOINT_PATH = "./hf_files/best_hierarchical_model.pt"
+CHECKPOINT_PATH = './best_hierarchical_model.pt'
 RAW_SEG_JSON    = './predex_opennyai_raw_v2.json'      # NEW name: never mix with old buggy splits
 RESULTS_JSON    = './predex_ablation_results_v2.json'
 PLOTS_DIR       = './'
 FORCE_RESEGMENT = False                                # True = ignore cache, re-run OpenNyAI
 
-MODEL_NAME      = "./hf_files/InLegalBERT"
+MODEL_NAME      = "law-ai/InLegalBERT"                 # hub id; or a local folder path
 GRU_HIDDEN      = 256
 GRU_LAYERS      = 2
 DROPOUT         = 0.3
@@ -199,16 +199,9 @@ def sanity_check_segmentation(cases, texts):
     print("\nRole distribution after segmentation:")
     for role in ALL_ROLES + [r for r in counts if r not in ALL_ROLES]:
         print(f"  {role:<15} {counts.get(role, 0):>7}  ({100 * counts.get(role, 0) / max(total, 1):5.1f}%)")
-    # The old script lost STA / ISSUE into NONE. Only FAC is hard-required; other roles only
-    # WARN, because a small sample (e.g. the 5-case smoke test) can legitimately lack a role.
-    assert counts.get('FAC', 0) > 0, "No FAC sentences found - segmentation is broken"
-    if len(cases) >= 100:
-        for role in ['STA', 'ANALYSIS', 'ISSUE', 'RPC']:
-            if counts.get(role, 0) == 0:
-                print(f"  WARNING: zero {role} sentences across {len(cases)} cases - the matching ablation variant "
-                      f"will equal facts-only. Check whether this model emits {role} on this data.")
-    else:
-        print(f"  (small sample of {len(cases)} cases - role-presence checks skipped)")
+    # This is exactly what the old script got wrong: STA / ISSUE vanished into NONE.
+    for must_have in ['FAC', 'STA', 'ANALYSIS', 'ISSUE']:
+        assert counts.get(must_have, 0) > 0, f"No {must_have} sentences found - segmentation/bucketing is broken"
     n_empty = sum(1 for c in cases if not c['sentences'])
     n_nofac = sum(1 for c in cases if not any(s['role'] == 'FAC' for s in c['sentences']))
     print(f"\nCases with no sentences at all: {n_empty} | cases with no FAC sentence: {n_nofac}")
@@ -232,11 +225,10 @@ def get_segmentation(df, texts, labels, names):
     segmented, failed = run_opennyai_segmentation(texts, batch_size=8)
     cases = [{'index': i, 'case_name': names[i], 'label': labels[i], 'sentences': segmented[i]}
              for i in range(len(df))]
-    # Save BEFORE checking, so a failed check can never throw away hours of segmentation.
+    sanity_check_segmentation(cases, texts)
     with open(RAW_SEG_JSON, 'w') as f:
         json.dump({'schema': 2, 'failed': failed, 'cases': cases}, f)
     print(f"Segmentation saved to {RAW_SEG_JSON} (failed cases: {failed})")
-    sanity_check_segmentation(cases, texts)
     return cases
 
 

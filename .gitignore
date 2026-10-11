@@ -1,14 +1,15 @@
+# Virtual environments
 env/
-*.pt
-predex_opennyai_splits.json
-
-# Virtual environment
 .venv/
 
-# Large HF artifacts
+# Model checkpoints and large Hugging Face artifacts
+*.pt
+*.bin
 hf_files/
 
-# Large generated segmentation artifact
+# Large datasets and generated artifacts
+*.parquet
+predex_opennyai_splits.json
 predex_opennyai_raw_v2.json
 
 # Runtime logs
